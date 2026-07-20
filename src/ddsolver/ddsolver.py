@@ -153,6 +153,21 @@ class DDSolver:
 
         return int(ns_par.split()[1])
 
+    def dd_table(self, hand):
+        """Double-dummy makeable-tricks grid for a full deal.
+
+        Returns a 5x4 list res_table[strain][declarer] = max tricks
+        makeable double-dummy, where strain order is S,H,D,C,NT (0-4)
+        and declarer order is N,E,S,W (0-3). Returns None on any DDS
+        error so callers can degrade gracefully.
+        """
+        try:
+            result = dds3.calc_all_tables_pbn(["N:" + hand], mode=-1)
+            return result["tables"][0]["res_table"]
+        except Exception as e:
+            sys.stderr.write(f"dd_table failed: {e}\n")
+            return None
+
     # Solutions
     #1	Find the maximum number of tricks for the side to play.  Return only one of the optimum cards and its score.
     #2	Find the maximum number of tricks for the side to play.  Return all optimum cards and their scores.

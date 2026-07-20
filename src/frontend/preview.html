@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BEN table preview</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="container">
+
+  <!-- NORTH hand (dummy) -->
+  <div id="north" class="grid-item">
+    <div style="display:flex">
+      <div class="card" data-value="K" symbol="SK">&spades;</div>
+      <div class="card" data-value="Q" symbol="SQ">&spades;</div>
+      <div class="card" data-value="7" symbol="S7">&spades;</div>
+    </div>
+    <div style="display:flex">
+      <div class="card red" data-value="A" symbol="HA">&hearts;</div>
+      <div class="card red" data-value="9" symbol="H9">&hearts;</div>
+    </div>
+    <div style="display:flex">
+      <div class="card orange" data-value="K" symbol="DK">&diams;</div>
+      <div class="card orange" data-value="J" symbol="DJ">&diams;</div>
+      <div class="card orange" data-value="4" symbol="D4">&diams;</div>
+    </div>
+    <div style="display:flex">
+      <div class="card green" data-value="A" symbol="CA">&clubs;</div>
+      <div class="card green" data-value="T" symbol="CT">&clubs;</div>
+      <div class="card green" data-value="6" symbol="C6">&clubs;</div>
+      <div class="card green" data-value="3" symbol="C3">&clubs;</div>
+    </div>
+  </div>
+
+  <!-- AUCTION PANEL -->
+  <div id="auction-main" class="grid-item">
+    <div id="auction-container">
+      <div id="auction">
+        <table>
+          <thead><tr><th>W</th><th>N</th><th>E</th><th>S</th></tr></thead>
+          <tbody>
+            <tr><td>&nbsp;</td><td>1<span class="green">&clubs;</span></td><td>Pass</td><td>1<span class="red">&hearts;</span></td></tr>
+            <tr><td>Pass</td><td>2<span class="red">&hearts;</span></td><td>Pass</td><td>4<span class="red">&hearts;</span></td></tr>
+            <tr><td>Pass</td><td>Pass</td><td>Pass</td><td>&nbsp;</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="tricks">N/S&nbsp;5&nbsp;&nbsp;&nbsp;E/W&nbsp;2</div>
+    <div id="last-trick">Show last trick</div>
+    <div id="claim"><span>Claim</span><div id="claim-tricks"><div>8</div><div>9</div><div>10</div></div></div>
+    <div id="conceed">Conceed</div>
+  </div>
+
+  <!-- WEST hand — opponent: hidden in real play (Ben renders it empty) -->
+  <div id="west" class="grid-item"></div>
+
+  <!-- TABLE (felt + current trick) -->
+  <div id="table" class="grid-item">
+    <div id="table-container">
+      <div class="table-grid-item label-number"><span class="seat-label">1</span></div>
+      <div class="table-grid-item label-north"><span class="seat-label dealer">N</span></div>
+      <div class="table-grid-item label-west"><span class="seat-label">W</span></div>
+      <div class="table-grid-item trick-north"><div class="card orange" data-value="J" symbol="DJ">&diams;</div></div>
+      <div class="table-grid-item trick-east"><div class="card" data-value="7" symbol="S7">&spades;</div></div>
+      <div class="table-grid-item label-east"><span class="seat-label">E</span></div>
+      <div class="table-grid-item trick-west"><div class="card orange" data-value="9" symbol="D9">&diams;</div></div>
+      <div class="table-grid-item trick-south"><div class="card orange" data-value="A" symbol="DA">&diams;</div></div>
+      <div class="table-grid-item label-south"><span class="seat-label turn">S</span></div>
+    </div>
+  </div>
+
+  <!-- EAST hand — opponent: hidden in real play (Ben renders it empty) -->
+  <div id="east" class="grid-item"></div>
+
+  <!-- SOUTH hand (human) -->
+  <div id="south" class="grid-item">
+    <div style="display:flex">
+      <div class="card red" data-value="J" symbol="HJ">&hearts;</div>
+      <div class="card red" data-value="T" symbol="HT">&hearts;</div>
+      <div class="card red" data-value="8" symbol="H8">&hearts;</div>
+      <div class="card red" data-value="7" symbol="H7">&hearts;</div>
+      <div class="card red" data-value="4" symbol="H4">&hearts;</div>
+      <div class="card red" data-value="3" symbol="H3">&hearts;</div>
+      <div class="card red" data-value="2" symbol="H2">&hearts;</div>
+    </div>
+    <div style="display:flex">
+      <div class="card" data-value="8" symbol="S8">&spades;</div>
+      <div class="card" data-value="5" symbol="S5">&spades;</div>
+    </div>
+    <div style="display:flex">
+      <div class="card orange" data-value="T" symbol="DT">&diams;</div>
+      <div class="card orange" data-value="5" symbol="D5">&diams;</div>
+    </div>
+    <div style="display:flex">
+      <div class="card green" data-value="J" symbol="CJ">&clubs;</div>
+      <div class="card green" data-value="9" symbol="C9">&clubs;</div>
+    </div>
+  </div>
+
+  <!-- BIDDING BOX -->
+  <div id="bidding" class="grid-item">
+    <div id="bidding-box">
+      <div id="bidding-levels">
+        <div>1</div><div>2</div><div>3</div><div class="selected">4</div><div>5</div><div>6</div><div>7</div>
+      </div>
+      <div id="bidding-suits">
+        <div class="bid-clubs">&clubs;</div><div class="bid-diamonds">&diams;</div>
+        <div class="bid-hearts">&hearts;</div><div class="bid-spades">&spades;</div>
+        <div class="bid-nt">NT</div>
+      </div>
+      <div id="bidding-calls">
+        <div class="pass">Pass</div><div class="double">X</div><div class="redouble">XX</div>
+        <div class="alert">Alert</div><div class="hint">Hint</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

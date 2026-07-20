@@ -1,564 +1,623 @@
-/* Introduction*/
-.container {
-    max-width: 90%;
-    margin: 10px auto;
-    min-width: 1024px;
+@charset "UTF-8";
+/* =====================================================================
+   BEN - consumer-grade card-room restyle (2026-07-19)
+   PURE CSS reskin. Every selector the JS relies on is preserved with its
+   functional behaviour (card, empty-suit, turn, dealer, selected, invalid,
+   hidden, trick slots, bidding box, loader). Original saved as style.original.css
+   ===================================================================== */
+
+:root {
+    --felt-1:#1f7a46;
+    --felt-2:#0f5f34;
+    --felt-edge:#0a3d22;
+    --wood:#4a3524;
+    --ambient-1:#1b2430;
+    --ambient-2:#0d1218;
+    --panel:rgba(255,255,255,.94);
+    --panel-dark:rgba(20,28,38,.92);
+    --ink:#1a1a2e;
+    --gold:#e8c15a;
+    --gold-soft:#f4dd97;
+    --suit-spade:#1a1a2e;
+    --suit-heart:#d1344a;
+    --suit-diamond:#e07b00;
+    --suit-club:#1a8a3c;
+    --card-face-1:#ffffff;
+    --card-face-2:#eef1f6;
+    --radius:10px;
+    --shadow-card:0 2px 6px rgba(0,0,0,.4);
+    --cw:clamp(2.5rem, 5.6vw, 3.3rem);      /* card width, fluid */
+    --ch:calc(var(--cw) * 1.42);            /* card height */
 }
 
-form {
-    width: 100%;
-    display: block;
-    /* Ensure the form takes up the full width */
-}
-
-.content {
-    column-count: 3; /* Set the number of columns */
-    column-gap: 20px; /* Adjust the gap between columns */
-}
-
-.border {
-    padding: 3px;
-    border: 1px solid #333; /* Add a border on the right side */
-    break-inside: avoid-column;
-}
-
-.content p {
-    break-inside: avoid-column; /* Prevent column breaks inside paragraphs */
-    margin: 0; /* Remove default margins */
-}
-
-.inner-div {
-    break-inside: avoid-column; /* Prevent column breaks inside paragraphs */
-    margin: 0; /* Remove default margins */
-}
-
-p {
-    margin: 0 0 20px; /* Margin between paragraphs */
-}
-
-*, *::after, *::before {
-    box-sizing: border-box;
-}
+*, *::after, *::before { box-sizing: border-box; }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     margin: 0;
-    /* cursor: pointer; */
     justify-content: center;
-    background-color: lightsteelblue;
-    /* user-select: none; */
+    color: #e9edf2;
+    background:
+        radial-gradient(ellipse 90% 60% at 50% -8%, #24405e 0%, rgba(36,64,94,0) 62%),
+        linear-gradient(160deg, var(--ambient-1) 0%, var(--ambient-2) 100%);
+    background-repeat: no-repeat;
+    background-color: var(--ambient-2);
+    min-height: 100vh;
     -webkit-tap-highlight-color: rgba(0,0,0,0);
 }
 
+/* ===================== main game grid ===================== */
 #container {
     display: grid;
-    grid-template-columns: minmax(200px, 1fr) minmax(200px, 1fr) minmax(200px, 1fr)  minmax(200px, 1fr);
-    grid-template-rows: minmax(100px, 1fr) minmax(300px, 3fr) minmax(100px, 1fr) minmax(100px, 1fr);
-    height: 700px; /* Set a maximum height for the container */
-    max-width: 96%;
-    gap: 10px; /* Add spacing between grid items */}
-
-.hidden {
-    display: none;
+    grid-template-columns: minmax(140px,1fr) minmax(160px,1fr) minmax(160px,1fr) minmax(140px,1fr);
+    grid-template-rows: minmax(80px,1fr) minmax(260px,3fr) minmax(80px,1fr) minmax(90px,1fr);
+    height: min(760px, 94vh);
+    width: 100%;
+    max-width: 1120px;
+    margin: 10px auto;
+    gap: 10px;
+    padding: 8px;
 }
-    
+
+.hidden { display: none; }
+
+.grid-item { min-width: 0; }
+
+/* seat hand containers */
 #north, #south {
     grid-column: span 3;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding: 6px 0;
     display: flex;
-    justify-content: center
+    justify-content: center;
+    align-items: center;
+    gap: .5rem;
 }
-
-.bidding {
-    padding-top: 10px;
-    padding-bottom: 10px;
-    display: flex;
-    justify-content: center
-}
+#north { align-items: flex-end; }
+#south { align-items: flex-start; }
 
 #west, #east {
     display: flex;
-    flex-direction: column; /* Update to column direction for vertical stacking */
-    align-items: flex-start; /* Adjust alignment as needed */
-    justify-content: center; /* Adjust justification as needed */
-    font-size: 3rem;
-    font-family: Arial, sans-serif;
+    flex-direction: column;
+    justify-content: center;
+    gap: .35rem;
 }
+#west { align-items: flex-start; }
+#east { align-items: flex-end; }
 
-#east {
-    display: flex;
-    flex-direction: column; /* Update to column direction for vertical stacking */
-    align-items: flex-end; /* Adjust alignment as needed */
-    justify-content: center; /* Adjust justification as needed */
-    font-size: 3rem;
-    font-family: Arial, sans-serif;
-}
+.bidding { padding: 6px 0; display: flex; justify-content: center; }
 
-#north {
-    align-items: flex-end;
-}
-
-#south {
-    align-items: flex-start;
-}
-
+/* ===================== the felt table ===================== */
 #table {
-    background-color: green;
-    border-radius: .5rem;
-    filter: drop-shadow(2px 2px 2px black);
+    background:
+        radial-gradient(ellipse at 50% 32%, var(--felt-1) 0%, var(--felt-2) 58%, var(--felt-edge) 100%);
+    background-color: var(--felt-2);
+    border-radius: 16px;
+    border: 6px solid var(--wood);
+    box-shadow:
+        inset 0 0 40px rgba(0,0,0,.45),
+        inset 0 2px 6px rgba(255,255,255,.06),
+        0 10px 26px rgba(0,0,0,.5);
 }
 
 #table .seat-label {
-    font-family: Arial, sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-size: 2rem;
+    font-weight: 700;
+    font-size: clamp(1.1rem, 2.4vw, 1.9rem);
+    color: rgba(255,255,255,.78);
+    letter-spacing: .04em;
 }
 
-#table .dealer {
-    position: relative;
-    text-decoration: none;
-}
-
+#table .dealer { position: relative; color: var(--gold-soft); }
 #table .dealer::before {
     content: '';
     position: absolute;
-    width: calc(100% + 5px); /* Adjust the space (10px) between text and circular underline */
-    height: calc(100% - 5px);
-    border: 2px solid grey; /* Set border color */
-    top: 2px; /* Adjust the space between text and circular underline */
-    left: -2px; /* Adjust the space between text and circular underline */
+    width: calc(100% + 10px);
+    height: calc(100% + 2px);
+    border: 2px solid var(--gold);
+    border-radius: 999px;
+    top: -1px; left: -5px;
     z-index: -1;
-    box-sizing: border-box;
+    box-shadow: 0 0 10px rgba(232,193,90,.5);
 }
-
 #table .turn {
-    color: yellow;
-    font-weight: bolder;
-    animation: blink 1s infinite; /* Change the duration as needed */
+    color: var(--gold);
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(232,193,90,.9);
+    animation: pulse-turn 1.2s ease-in-out infinite;
 }
 
+/* ===================== cards ===================== */
 .card {
-    height: 4.5rem;
-    width: 3rem;
-    max-width: 4.4rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    margin-left: 2px;
-    font-size: 1.7rem;
-    justify-content: center;
-    display: flex;
-    align-items: flex-end;
-    background-color: white;
-    z-index: 100;
-}
-.empty-suit {
-    height: 4.5rem;
-    width: 1rem;
-    max-width: 4.4rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    margin-left: 2px;
-    font-size: 1.7rem;
-    justify-content: center;
-    display: flex;
-    align-items: flex-end;
-    background-color: white;
-    z-index: 100;
-}
-
-.empty-suit {
-    visibility: hidden; /* Hide the content but keep the space */
-}
-
-.card::before {
-    content: attr(data-value);
     position: relative;
-    top: -2rem;
-    font-size: 2rem;
-    font-family: Arial, sans-serif;
-    font-weight: bold;
+    height: var(--ch);
+    width: var(--cw);
+    max-width: 4.6rem;
+    border: 1px solid #c6ccd6;
+    border-radius: var(--radius);
+    margin-left: calc(var(--cw) * -0.30);   /* overlap => fanned hand */
+    background: linear-gradient(158deg, var(--card-face-1), var(--card-face-2));
+    box-shadow: var(--shadow-card);
+    color: var(--suit-spade);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--cw) * 0.74);       /* big centre suit glyph */
+    line-height: 1;
+    z-index: 100;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+/* first card of each suit-group: no overlap */
+.card:first-child { margin-left: 0; }
+
+/* corner rank indices (rank comes from data-value; colour inherits suit) */
+.card::before, .card::after {
+    content: attr(data-value);
+    position: absolute;
+    font-size: calc(var(--cw) * 0.42);
+    font-weight: 800;
+    line-height: 1;
+}
+.card::before { top: 3px; left: 5px; }
+.card::after  { bottom: 3px; right: 5px; transform: rotate(180deg); }
+
+.empty-suit {
+    height: var(--ch);
+    width: .6rem;
+    border: none;
+    background: transparent;
+    margin-left: 2px;
+    visibility: hidden;
 }
 
-.red {
-    color: red;
-}
-.green {
-    color: green;
-}
-.orange {
-    color: orange;
+/* hover-lift only for cards sitting in a hand (not played cards on table) */
+#north .card:hover, #south .card:hover,
+#east .card:hover, #west .card:hover {
+    transform: translateY(-16px);
+    box-shadow: 0 14px 22px rgba(0,0,0,.5);
+    cursor: pointer;
+    z-index: 300;
 }
 
+/* 4-colour deck */
+.red    { color: var(--suit-heart);  }
+.orange { color: var(--suit-diamond);}
+.green  { color: var(--suit-club);   }
+
+/* ===================== centre trick area ===================== */
 #table-container {
     display: grid;
-    grid-template-columns: 1fr 2fr 2fr 2fr 1fr;
-    grid-template-rows: 1fr 3fr 3fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: auto 1fr 1fr auto;
     height: 100%;
+    padding: 6px;
 }
+.table-grid-item { display: flex; justify-content: center; align-items: center; }
 
-.table-grid-item {
-    display: flex;
-    justify-content: center;
-}
+/* seat labels pinned to the four edges */
+.label-number { grid-column: 1; grid-row: 1; color: rgba(255,255,255,.4);
+    margin: 6px; font-size: clamp(1rem,2vw,1.6rem); font-weight: 700; }
+.label-north { grid-column: 2 / 5; grid-row: 1; align-items: flex-start; }
+.label-south { grid-column: 2 / 5; grid-row: 4; align-items: flex-end; }
+.label-west  { grid-column: 1; grid-row: 2 / 4; }
+.label-east  { grid-column: 5; grid-row: 2 / 4; }
 
-.label-number {
-    grid-column: span 1;
-    color: #ddd;
-    margin: 10px;
-    font-size: 2rem;
-    font-family: Arial, sans-serif;
-    justify-content: center;
-    font-weight: bold;
-}
+/* the four played cards cluster into a tight diamond at the centre */
+.trick-north { grid-column: 3; grid-row: 2; align-items: flex-end; }
+.trick-south { grid-column: 3; grid-row: 3; align-items: flex-start; }
+.trick-west  { grid-column: 2; grid-row: 2 / 4; justify-content: flex-end; }
+.trick-east  { grid-column: 4; grid-row: 2 / 4; justify-content: flex-start; }
 
-.label-north {
-    grid-column: span 3;
-}
-
-.label-south {
-    grid-column: span 5;
-}
-
-.label-west, .label-east {
-    grid-row: span 2;
-}
-
-.trick-west, .trick-east {
-    grid-row: span 2;
-    align-items: center;
-}
-
-.trick-north {
-    align-items: flex-end;
-    padding-bottom: 5px;
-}
-
-.trick-south {
-    align-items: flex-start;
-    padding-top: 5px;
-}
-
+/* played cards sit flat in the felt slots (no overlap, no hover-lift) */
 #table .card {
     width: 100%;
+    max-width: 3.4rem;
+    margin-left: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5);
 }
 
+/* ===================== auction panel ===================== */
 #auction-main {
     grid-row: span 2;
-    border: 1px solid black;
-    border-radius: 3px;
-    background-color: #efcdf5e0;
-    font-size: 1.5rem;
-    font-family: Arial, sans-serif;
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 12px;
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 1.1rem;
     display: block;
+    padding: 8px;
+    box-shadow: 0 8px 22px rgba(0,0,0,.35);
+    overflow: auto;
 }
-
 #auction-container {
     display: flex;
     flex-direction: column;
-    height: 18rem; /* Set a minimum height for the table container */
+    min-height: 14rem;
 }
-
 #boardno {
     position: absolute;
-    border: 1px solid black;
-    border-radius: 3px;
-    left: 55px;
-    top: 62px;
-    width: 32px;
+    border: 1px solid var(--wood);
+    border-radius: 6px;
+    left: 55px; top: 62px;
+    width: 34px;
     text-align: center;
-    background-color: #efcdf5e0;
-}
-
-#auction table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#auction td {
-    border: 1px solid #ddd;
-    padding: 1px;
-    text-align: center;
-    vertical-align: top;
-}
-
-#auction tr {
-    max-height: 5vh;
-}
-
-.tricks {
-    font-size: 1.3rem;
-    margin: .4rem;
-    text-align: center;
-    font-weight: bold;
-    color: navy;
-    padding: .5rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    background-color: yellowgreen;
-}
-
-#bidding-levels {
-    display: flex;
-}
-
-#bidding-levels div {
-    margin: .4rem;
-    padding: .4rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    font-size: 2rem;
-    background-color: white;
-    width: 3rem;
-    height: 3rem;
-    text-align: center;
-}
-
-#bidding-suits {
-    display: flex;
-}
-
-#bidding-suits div {
-    margin: .4rem;
-    padding: .5rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    font-size: 1.8rem;
-    background-color: white;
-    width: 3rem;
-    height: 3rem;
-    text-align: center;
-}
-
-#bidding-calls {
-    display: flex;
-}
-
-#bidding-calls div {
-    margin: .4rem;
-    padding: .5rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    font-size: 1.8rem;
-    background-color: white;
-    width: 6rem;
-    height: 3rem;
-    text-align: center;
-}
-
-#bidding-box .pass {
-    background-color: green;
-}
-
-#bidding-box .hint {
-    background-color: yellowgreen;
-}
-
-#bidding-box .alert {
-    background-color: blue;
-    color: white;
-}
-
-#bidding-box .double {
-    background-color: red;
-}
-
-#bidding-box .redouble {
-    background-color: blue;
-}
-
-#bidding-box .invalid {
-    background-color: grey;
-}
-
-#bidding-box .selected {
-    background-color: yellow;
-}
-
-#bidding-box .hidden {
-    visibility: hidden; /* Hide the content but keep the space */
-}
-
-#last-trick, #claim, #conceed {
-    margin: .4rem;
-    padding: .25rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    font-size: 1rem;
-    background-color: yellowgreen;
-    width: 8rem;
-    height: 1.6rem;
-    text-align: center;
-}
-
-#claim-tricks {
-    display: flex;
-}
-
-#claim-tricks div {
-    margin: .1rem;
-    margin-top: .4rem;
-    padding: .2rem;
-    border: 1px solid black;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    font-size: 1rem;
-    background-color: white;
-    width: 2rem;
-    height: 1.5rem;
-    text-align: center;
-}
-
-/* Styles for the unordered list */
-ul {
-    list-style-type: disc; /* Sets the list item marker to a filled circle */
-    margin: 0; /* Adds space around the list */
-    padding: 0; /* Adds space around the list */
-    padding-left: 20px; /* Adds an indentation to the left */
-}
-  
-/* Styles the marker color for unordered lists */
-ul::marker {
-    color: blue; /* Changes the color of the list item markers */
-}
-
-/* Styles for list items within the unordered list */
-ul li {
-    line-height: 1; /* Sets the line height for better readability */
-}
-
-/* Style for the span with class "bba" */
-span.bba {
-    font-size: 0.6em; /* You can adjust the size as needed */
-}
-  
-
-#customDialog {
-    border: 2px solid #000; /* Set border width and color */
-    background-color: #fff; /* Set background color */
-    opacity: 1 !important; /* Ensure opacity is set to 1 */
-    max-width: 400px;
-}
-
-#commentInput {
-    width: 100%;
-    height: 80px; /* Adjust the height as needed */
-}
-
-#buttonContainer {
-    margin-top: 10px;
-    text-align: right;
-}
-
-/* Style to hide the default "Close" button */
-.ui-dialog .ui-dialog-titlebar-close {
-    display: none;
-}
-
-.quality-good {
-    background-color: green;
-}
-
-.quality-ok {
-    background-color: lightsteelblue;
-}
-
-.quality-bad {
-    background-color: red;
-}
-
-.bid-nt {
+    background: var(--gold-soft);
+    color: var(--ink);
     font-weight: 700;
 }
-
-#loader {
-    position: absolute;
-    top: 0;
-    bottom: 200px;
-    left: 0;
-    right: 400px;
-    border: 12px solid #f3f3f3;
-    margin-left: 450px;
-    border-radius: 50%;
-    border-top: 12px solid #444444;
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-    z-index: 200;
-    margin-top: 135px;  
+#auction table { width: 100%; border-collapse: collapse; }
+#auction thead th {
+    font-size: .95rem;
+    color: #55607a;
+    padding: 3px 0;
+    border-bottom: 2px solid #d5dae4;
 }
-
-.center {
-    margin: auto;
+#auction td {
+    border: 1px solid #e2e6ee;
+    padding: 3px 2px;
     text-align: center;
+    vertical-align: top;
+    font-weight: 600;
+}
+#auction tr { max-height: 5vh; }
+
+.tricks {
+    font-size: 1.15rem;
+    margin: .5rem .2rem;
+    text-align: center;
+    font-weight: 800;
+    color: #0b3d1f;
+    padding: .5rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(160deg,#cfe9b6,#a7d67f);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
 }
 
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes blink {
-    0% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0;
-    }
-    100% {
-        opacity: 1;
-    }
-}
-
-.blinking-element {
-    animation: blink 2s infinite; /* Change the duration as needed */
-}
-
-.deal-cell {
+/* ===================== bidding box (physical-tray style) ===================== */
+/* A framed wooden tray on the felt: level row, strain row, calls row. */
+#bidding-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    padding: 1.5rem .95rem 1rem;
     position: relative;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.14)),
+        linear-gradient(160deg, #2b6142, #1a462d);
+    border: 3px solid #4a3524;
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.45),
+                inset 0 2px 3px rgba(255,255,255,.10),
+                inset 0 -3px 6px rgba(0,0,0,.28);
+}
+#bidding-box::before {
+    content: "叫牌盒 · BIDDING";
+    position: absolute;
+    top: .42rem; left: 0; right: 0;
+    text-align: center;
+    font-size: .62rem;
+    letter-spacing: .18em;
+    font-weight: 700;
+    color: rgba(255,255,255,.42);
+}
+#bidding-levels, #bidding-suits, #bidding-calls {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: .34rem;
+}
+#bidding-suits { margin-top: .1rem; }
+
+/* base tile — cream chips with a subtle bevel */
+#bidding-levels div, #bidding-suits div, #bidding-calls div {
+    border: 1px solid rgba(0,0,0,.22);
+    border-radius: 11px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(#ffffff, #e9edf3);
+    color: var(--ink);
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.85);
+    transition: transform .09s ease, box-shadow .09s ease, filter .09s ease;
+    user-select: none;
+}
+#bidding-levels div { border-radius: 50%; }            /* level chips are round */
+#bidding-calls div  { width: auto; min-width: 4.6rem; padding: 0 .7rem; height: 2.9rem;
+                      font-size: 1.15rem; border-radius: 999px; letter-spacing: .04em; }
+#bidding-levels div:hover, #bidding-suits div:hover, #bidding-calls div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 14px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.85);
+}
+#bidding-levels div:active, #bidding-suits div:active, #bidding-calls div:active {
+    transform: translateY(0); filter: brightness(.93);
+}
+
+/* suit-coloured strain buttons (bigger glyphs) */
+#bidding-suits div { font-size: 1.9rem; }
+#bidding-suits .bid-hearts   { color: var(--suit-heart);   }
+#bidding-suits .bid-diamonds { color: var(--suit-diamond); }
+#bidding-suits .bid-clubs    { color: var(--suit-club);    }
+#bidding-suits .bid-spades   { color: var(--suit-spade);   }
+.bid-nt { font-weight: 800; font-size: 1.25rem; color: #33406a; }
+
+/* call semantics preserved */
+#bidding-box .pass     { background: linear-gradient(#3aab5f,#268a48); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.25); }
+#bidding-box .hint     { background: linear-gradient(#e7f0a6,#c6e07a); color:#41500f; }
+#bidding-box .alert    { background: linear-gradient(#4a76e8,#2f57c8); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.25); }
+#bidding-box .double   { background: linear-gradient(#e0556a,#cc3350); color:#fff; font-weight:800; }
+#bidding-box .redouble { background: linear-gradient(#5a7fe0,#3f5fc8); color:#fff; font-weight:800; }
+#bidding-box .invalid  { background: linear-gradient(#d0d4db,#bcc1ca); color:#9298a3; cursor: default;
+                         box-shadow: inset 0 1px 0 rgba(255,255,255,.4); filter:none; opacity:.75; }
+#bidding-box .invalid:hover { transform:none; box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+#bidding-box .selected { background: linear-gradient(var(--gold-soft),var(--gold)); color: var(--ink);
+                         box-shadow: 0 0 14px rgba(232,193,90,.85), inset 0 1px 0 rgba(255,255,255,.6); }
+#bidding-box .hidden   { visibility: hidden; }
+
+/* ===================== side action buttons ===================== */
+#last-trick, #claim, #conceed {
+    margin: .4rem;
+    padding: .35rem;
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 8px;
+    font-size: .95rem;
+    font-weight: 700;
+    color: #0b3d1f;
+    background: linear-gradient(160deg,#cfe9b6,#a7d67f);
+    width: 8.5rem;
+    min-height: 1.9rem;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,.25);
+}
+#last-trick:hover, #claim:hover, #conceed:hover { filter: brightness(1.05); }
+
+#claim-tricks { display: flex; flex-wrap: wrap; }
+#claim-tricks div {
+    margin: .18rem;
+    padding: .2rem;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #fff;
+    color: var(--ink);
+    width: 2rem;
+    height: 1.7rem;
+    text-align: center;
     cursor: pointer;
 }
 
-.tooltip {
-    display: none;
+/* ===================== loader ===================== */
+#loader {
     position: absolute;
-    top: -20px;
-    background-color: white;
-    border: 1px solid black;
-    padding: 5px;
-    width: 150px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-    text-align: left;
-    font-size: 12px;
-    z-index: 100;
-    white-space: nowrap;
+    top: 40%; left: 50%;
+    transform: translate(-50%,-50%);
+    border: 10px solid rgba(255,255,255,.25);
+    border-top: 10px solid var(--gold);
+    border-radius: 50%;
+    width: 54px; height: 54px;
+    animation: spin 1s linear infinite;
+    z-index: 400;
+}
+.center { margin: auto; text-align: center; }
+
+@keyframes spin { 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes pulse-turn {
+    0%,100% { text-shadow: 0 0 6px rgba(232,193,90,.6);  opacity: 1;   }
+    50%     { text-shadow: 0 0 16px rgba(232,193,90,1);   opacity: .82; }
+}
+.blinking-element { animation: blink 2s infinite; }
+
+/* ===================== end-of-deal feedback dialog ===================== */
+#customDialog {
+    border: 1px solid #333;
+    background: #fff;
+    color: var(--ink);
+    opacity: 1 !important;
+    max-width: 420px;
+    border-radius: 10px;
+}
+#commentInput { width: 100%; height: 80px; }
+#buttonContainer { margin-top: 10px; text-align: right; }
+.ui-dialog .ui-dialog-titlebar-close { display: none; }
+.quality-good { background: linear-gradient(#3aab5f,#268a48); color:#fff; }
+.quality-ok   { background: linear-gradient(#8fa9d8,#6f8fca); color:#fff; }
+.quality-bad  { background: linear-gradient(#e0556a,#cc3350); color:#fff; }
+
+/* ===================== responsive: tablet / narrow ===================== */
+/* Below 860px the right-hand auction column has no room, so the whole layout
+   reflows to a single stacked column via grid-template-areas: hands + table
+   cross on top, then auction panel, then bidding box - all full width. */
+@media (max-width: 860px) {
+    :root { --cw: clamp(1.7rem, 6.6vw, 2.4rem); }
+    #container {
+        height: auto;
+        max-width: 560px;
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(7, auto);
+        grid-template-areas: "n" "w" "t" "e" "s" "auc" "bid";
+        gap: 6px;
+    }
+    /* every seat becomes a full-width horizontal row */
+    #north { grid-area: n; grid-column: auto; align-items: center; }
+    #west  { grid-area: w; flex-direction: row; justify-content: center; align-items: center; }
+    #table { grid-area: t; min-height: 200px; }
+    #east  { grid-area: e; flex-direction: row; justify-content: center; align-items: center; }
+    #south { grid-area: s; grid-column: auto; align-items: center; }
+    #auction-main { grid-area: auc; grid-row: auto; font-size: .95rem; }
+    #bidding { grid-area: bid; display: flex; justify-content: center; }
+    #bidding-box { align-items: center; }
+    #bidding-levels div, #bidding-suits div { width: 2.7rem; height: 2.7rem; font-size: 1.4rem; }
+    #bidding-suits div { font-size: 1.7rem; }
+    #bidding-calls div { min-width: 4.4rem; height: 2.7rem; font-size: 1.1rem; }
 }
 
-.deal-cell:hover .tooltip {
-    display: block;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+/* ===================== responsive: phone ===================== */
+@media (max-width: 520px) {
+    :root { --cw: clamp(1.7rem, 8vw, 2.2rem); }
+    #container { max-width: 100%; gap: 6px; padding: 4px; }
+    .card { margin-left: calc(var(--cw) * -0.44); }      /* tighter fan to fit */
+    #table { min-height: 190px; border-width: 4px; border-radius: 12px; }
+    #table .seat-label { font-size: 1rem; }
+    .tricks { font-size: .95rem; }
+    #bidding-levels div, #bidding-suits div { width: 2.6rem; height: 2.6rem; font-size: 1.3rem; }
+    #bidding-suits div { font-size: 1.6rem; }
+    #bidding-calls div { min-width: 4.2rem; height: 2.6rem; font-size: 1.05rem; }
+    #last-trick, #claim, #conceed { width: 7rem; font-size: .85rem; }
+    /* bigger tap target on phones: expose more of each fanned card */
+    #south .card:hover, #north .card:hover { transform: translateY(-12px); }
 }
 
-.right-align {
-    text-align: right !important;
-    padding-right: 10px;
+/* ===================== play-table top toolbar ===================== */
+#topbar {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 8px 4px;
+    flex-wrap: wrap;
+}
+#topbar a {
+    text-decoration: none;
+    font-weight: 700;
+    font-size: .95rem;
+    color: #eaf0f7;
+    background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+    border: 1px solid rgba(255,255,255,.18);
+    padding: .5rem 1.1rem;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    transition: transform .1s ease, filter .15s ease;
+}
+#topbar #newdeal-link {
+    background: linear-gradient(160deg,#3aab5f,#268a48);
+    border-color: rgba(255,255,255,.25);
+    color: #fff;
+}
+#topbar a:hover { transform: translateY(-1px); filter: brightness(1.08); }
+
+/* =====================================================================
+   LANDING / MENU PAGE (home.tpl, api.tpl) - kept functional, lightly cleaned
+   ===================================================================== */
+.container {
+    max-width: 1100px;
+    margin: 16px auto;
+    padding: 0 14px;
+}
+form { width: 100%; display: block; }
+.content { column-count: 3; column-gap: 20px; }
+.border { padding: 3px; border: 1px solid #333; break-inside: avoid-column; }
+.content p { break-inside: avoid-column; margin: 0; }
+.inner-div { break-inside: avoid-column; margin: 0; }
+p { margin: 0 0 20px; }
+
+ul { list-style-type: disc; margin: 0; padding: 0; padding-left: 20px; }
+ul::marker { color: blue; }
+ul li { line-height: 1; }
+span.bba { font-size: 0.6em; }
+
+.deal-cell { position: relative; cursor: pointer; }
+.tooltip {
+    display: none; position: absolute; top: -20px;
+    background: #fff; color:#111; border: 1px solid black; padding: 5px; width: 150px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,.3); text-align: left; font-size: 12px; z-index: 100; white-space: nowrap;
+}
+.deal-cell:hover .tooltip { display: block; top: 100%; left: 50%; transform: translateX(-50%); }
+.right-align { text-align: right !important; padding-right: 10px; }
+.explain { background: #fff; color:#111; border: 1px solid black; margin: 50px; text-align: left; font-size: 12px; }
+
+@media (max-width: 720px) {
+    .content { column-count: 1; }
+    .container { min-width: 0; }
 }
 
-.explain {
-    background-color: white;
-    border: 1px solid black;
-    margin: 50px;
-    text-align: left;
-    font-size: 12px;
+/* ===================== technique-practice banner ===================== */
+#tech-banner {
+    position: sticky; top: 0; z-index: 150;
+    background: linear-gradient(180deg, #1b74c4, #12558f);
+    color: #f4f8ff; box-shadow: 0 3px 12px rgba(0,0,0,.35);
 }
+#tech-banner.hid { display: none; }
+#tech-banner .tb-in {
+    max-width: 900px; margin: 0 auto; padding: 8px 14px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px;
+}
+#tech-banner .tb-tag { font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+#tech-banner b { font-size: 14px; white-space: nowrap; }
+#tech-banner .tb-hint { flex: 1; min-width: 180px; line-height: 1.45; color: #dcecff; }
+#tech-banner button {
+    background: rgba(255,255,255,.18); color: #fff; border: none; border-radius: 8px;
+    width: 28px; height: 28px; font-size: 14px; cursor: pointer; flex-shrink: 0;
+}
+
+/* ===================== end-of-deal result card ===================== */
+#deal-result {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,.55); padding: 18px;
+}
+#deal-result.on { display: flex; }
+.dr-card {
+    width: 100%; max-width: 340px;
+    background: linear-gradient(160deg, #16663b, #0d4f2e);
+    color: #f4ecd8;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 18px;
+    padding: 20px 22px 18px;
+    box-shadow: 0 14px 44px rgba(0,0,0,.5);
+    text-align: center;
+}
+.dr-title {
+    font-size: 12px; letter-spacing: .22em; font-weight: 700;
+    color: rgba(255,255,255,.5); margin-bottom: 12px;
+}
+.dr-line { font-size: 15px; margin: 7px 0; }
+.dr-line.big { font-size: 30px; font-weight: 800; letter-spacing: 1px; margin: 4px 0 12px; }
+.dr-line .ok   { color: #7ff0a6; font-weight: 700; }
+.dr-line .down { color: #ff8a9c; font-weight: 700; }
+.dr-line .muted { color: #b7ceb9; }
+.dr-note { font-size: 11px; color: #b7ceb9; margin: 12px 0 14px; }
+.dr-btns { display: flex; gap: 8px; }
+.dr-btns a, .dr-btns button {
+    flex: 1; font: inherit; font-size: 14px; font-weight: 600;
+    padding: 11px 6px; border-radius: 11px; cursor: pointer; text-decoration: none;
+    color: #f4ecd8; background: rgba(0,0,0,.24);
+    border: 1px solid rgba(255,255,255,.2);
+}
+.dr-btns a:first-child { background: #ffd66b; color: #3a2c00; border-color: #ffd66b; }
+/* suit-rank colours in the result card (4-colour deck) */
+#deal-result .r-spade   { color: #12181f; }
+#deal-result .r-heart   { color: var(--suit-heart, #d1344a); }
+#deal-result .r-diamond { color: var(--suit-diamond, #e07b00); }
+#deal-result .r-club    { color: var(--suit-club, #1a8a3c); }
+#deal-result .r-nt      { color: #cdd6ff; font-weight: 800; }
+.dr-line.big .r-spade { color: #f4ecd8; }   /* on dark card, keep spade visible */
+
+/* double-dummy makeable-tricks grid inside the result card */
+.dr-grid-wrap { margin: 12px 0 4px; }
+.dr-grid-title { font-size: 11px; color: #b7ceb9; margin-bottom: 6px; }
+table.dd-grid {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+table.dd-grid th, table.dd-grid td {
+    padding: 5px 0; text-align: center;
+    border: 1px solid rgba(255,255,255,.12);
+}
+table.dd-grid thead th { font-size: 12px; color: #b7ceb9; font-weight: 700; }
+table.dd-grid tbody th { font-weight: 800; }        /* strain label column */
+table.dd-grid td.mk  { color: #f4ecd8; font-weight: 700; }   /* 7+ makeable */
+table.dd-grid td.no  { color: rgba(244,236,216,.32); }       /* below game */
+table.dd-grid td.hl  { background: #ffd66b; color: #3a2c00; font-weight: 800; }
+/* grid suit glyphs must stay legible on the dark green card */
+.dd-grid .r-spade   { color: #f4ecd8; }
+.dd-grid .r-heart   { color: #ff8a9c; }
+.dd-grid .r-diamond { color: #ffb066; }
+.dd-grid .r-club    { color: #7ff0a6; }
+.dd-grid .r-nt      { color: #cdd6ff; }

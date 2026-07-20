@@ -128,3 +128,16 @@ src/csharp/bin
 src/csharp/obj
 .claude/settings.local.json
 logs/
+
+# --- runtime data / state / build artifacts (added 2026-07-20) ---
+# shelve history db + any corrupt backups (never commit user data)
+src/gamedb
+src/gamedb.db*
+# runtime state marker (current bidding system)
+.current_system
+# debug dump
+src/dump.txt
+# local css backup
+src/frontend/style.original.css
+# macOS double-dummy solver binaries (platform build artifacts, not source)
+bin/**/*.dylib

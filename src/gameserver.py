@@ -114,7 +114,7 @@ parser.add_argument("--port", type=int, default=4443, help="Port for appserver")
 parser.add_argument("--auto", type=bool, default=False, help="BEN bids and plays all 4 hands")
 parser.add_argument("--playonly", type=str_to_bool, default=False, help="Only play, no bidding")
 parser.add_argument("--matchpoint", type=str_to_bool, default=None, help="Playing match point")
-parser.add_argument("--seed", type=int, default=42, help="Seed for random")
+parser.add_argument("--seed", type=int, default=None, help="Seed for random (None = random board each game; pass an int for reproducible deals)")
 
 args = parser.parse_args()
 
