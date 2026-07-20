@@ -482,6 +482,23 @@ class Driver:
             result['claimedbydeclarer'] = self.claimedbydeclarer
         if self.conceed is not None:
             result['conceed'] = self.conceed
+        # Double-dummy par + actual declarer score (NS-relative), so every
+        # saved/history record carries a double-dummy benchmark. Mirrors the
+        # CLI main() pattern; wrapped so a DDS hiccup never breaks deal_end.
+        result['tricks_taken'] = self.tricks_taken
+        try:
+            result['parscore'] = self.dds.calculatepar(
+                self.deal_str, [self.vuln_ns, self.vuln_ew], False)
+            # Full double-dummy makeable grid so the result card can show the
+            # optimal tricks for the played strain/declarer (跟最佳结果比差距).
+            result['dd_table'] = self.dds.dd_table(self.deal_str)
+            if self.contract:
+                if self.contract[-1] in ('N', 'S'):
+                    result['score'] = scoring.score(self.contract, self.vuln_ns, self.tricks_taken)
+                else:
+                    result['score'] = -scoring.score(self.contract, self.vuln_ew, self.tricks_taken)
+        except Exception as e:
+            print(f"par/score calc failed: {e}")
         return result
 
 # trick_i : 
@@ -701,6 +718,13 @@ class Driver:
                                 self.claimed = 0
                                 self.conceed = True
                                 self.trick_winners = trick_won_by
+                                # Concede returns early too — set tricks_taken so the
+                                # result card doesn't score a phantom 0 (see claim branch).
+                                declarer_won = card_players[3].n_tricks_taken
+                                if self.claimedbydeclarer:
+                                    self.tricks_taken = declarer_won
+                                else:
+                                    self.tricks_taken = declarer_won + (13 - len(trick_won_by))
                                 print(f"Contract: {self.contract} Accepted conceed½")
                                 return
 
@@ -721,6 +745,16 @@ class Driver:
 
                                 # Trick winners until claim is saved
                                 self.trick_winners = trick_won_by
+                                # A claim returns early, so the normal end-of-play
+                                # tricks_taken (players[3].n_tricks_taken) never runs.
+                                # Set it here with the same rule the history view uses:
+                                # declaring side's won tricks so far + its share of the
+                                # claimed remainder. Otherwise the result card scores 0.
+                                declarer_won = card_players[3].n_tricks_taken
+                                if self.claimedbydeclarer:
+                                    self.tricks_taken = declarer_won + tricks_claimed
+                                else:
+                                    self.tricks_taken = declarer_won + (13 - len(trick_won_by) - tricks_claimed)
                                 # Print contract and result
                                 if self.claimedbydeclarer:
                                     print(f"Contract: {self.contract} Accepted declarers claim of {tricks_claimed} tricks")

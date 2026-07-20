@@ -28,9 +28,11 @@
 </head>
 
 <body>
-    <div class="center">
-        <h1>Play with BEN. Version 0.8.8.4</h1>
-    </div>    
+    <div id="topbar">
+        <a href="/" id="newdeal-link">&#128260; 新的一局</a>
+        <a href="/practice" id="practice-link">&#127919; 牌型练习</a>
+    </div>
+
 <div id="loader"></div> 
 <!-- HTML for the dialog -->
 <div id="customDialog" title="Feedback">
@@ -49,7 +51,7 @@
             <div id="auction-container"></div>
             <div class="tricks">Tricks</div>
             <div id="last-trick" style="visibility: hidden">Show last trick</div>
-            <div id="claim" style="visibility: hidden">Claim
+            <div id="claim" style="visibility: hidden">认赢到几墩(我方总墩)
                 <div id="claim-tricks">
                 </div>
             </div>
@@ -93,7 +95,7 @@
     </div>
 
     <div id="explain" class="explain"></div>        
-    <div><a id="homeLink" href="/home">Home</a></div>
+    <div><a id="homeLink" href="/practice">&#127919; 牌型练习</a></div>
 
     <div id="auctionstr"></div>
 
@@ -119,11 +121,28 @@
         const playonly = urlParams.get('P')
         const play = urlParams.get('play')
         const matchpoint = urlParams.get('M')
-        if (play) {
-            home = '/play'
-        } else {
-            home = '/home'
+        // Technique-practice banner: shows the goal for a /deal/tech/<key> deal.
+        const techNote = urlParams.get('technote')
+        const techHint = urlParams.get('techhint')
+        const banTag = urlParams.get('bantag') || '🎯 技巧练习'
+        if (techHint) {
+            const tb = document.createElement('div')
+            tb.id = 'tech-banner'
+            tb.innerHTML = '<div class="tb-in"><span class="tb-tag">' + banTag + '</span>' +
+                '<b>' + (techNote || '') + '</b><span class="tb-hint">' + techHint + '</span>' +
+                '<button onclick="this.closest(\'#tech-banner\').classList.add(\'hid\')">✕</button></div>'
+            document.body.insertBefore(tb, document.body.firstChild)
         }
+        // Always route "home" to our own polished practice menu, never Ben's
+        // built-in /home or /play crude pages.
+        home = '/practice'
+        // Themed-practice continuity: if we entered via /deal/<theme>, keep
+        // "next deal" locked to that same theme instead of a plain random deal.
+        // Priority: explicit entry path (tech/bid) > theme > plain random.
+        const theme = urlParams.get('theme')
+        const nextDeal = urlParams.get('next') || (theme ? '/deal/' + theme : '/')
+        const ndLink = document.getElementById('newdeal-link')
+        if (ndLink) ndLink.href = nextDeal
         document.getElementById("homeLink").href = home;
         let server = urlParams.get('server')
         if (!server) server = '3'
@@ -597,29 +616,13 @@
                 }
                 document.querySelector('#last-trick').style.visibility = 'hidden'
                 resetClaim()
-                $("#customDialog").dialog("open");
-                // Handle button clicks
-                $("#badButton").on("click", function() {
-                    var userFeedback = $("#commentInput").val();
-                    saveDeal(data.dict, userFeedback, "bad");
-                    $("#customDialog").dialog("close");                    
-                });
-
-                $("#okButton").on("click", function() {
-                    var userFeedback = $("#commentInput").val();
-                    saveDeal(data.dict, userFeedback, "ok");
-                    $("#customDialog").dialog("close");
-                });
-
-                $("#goodButton").on("click", function() {
-                    var userFeedback = $("#commentInput").val();
-                    saveDeal(data.dict, userFeedback, "good");
-                    $("#customDialog").dialog("close");
-                });
-                $("#nosaveButton").on("click", function() {
-                    $("#customDialog").dialog("close");
-                    navigate();
-                });
+                // Silently save every completed deal to history (with the
+                // double-dummy par carried in data.dict), then show a clean
+                // result card. The player reviews the final position and
+                // continues via the card's buttons or the topbar — no crude
+                // bad/ok/good training dialog.
+                autoSaveHistory(data.dict)
+                showDealResult(data.dict)
             }
         };
 
@@ -680,7 +683,131 @@
             });
         }
 
-    </script>  
+        // Silent history save — like saveDeal but does NOT navigate away, so
+        // the player can review the finished board.
+        function autoSaveHistory(dict) {
+            const payload = JSON.parse(JSON.stringify(dict));
+            payload.feedback = '';
+            payload.quality = 'auto';
+            fetch('/api/save/deal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            }).then(r => { if (r.ok) console.log('History saved'); })
+              .catch(e => console.error('History save failed:', e));
+        }
+
+        const SUIT_SYM = { S:'&spades;', H:'&hearts;', D:'&diams;', C:'&clubs;' };
+        const SUIT_CLS = { S:'r-spade', H:'r-heart', D:'r-diamond', C:'r-club', N:'r-nt' };
+        const SEAT_CN  = { N:'北', E:'东', S:'南', W:'西' };
+
+        function fmtStrain(ch) {
+            if (ch === 'N') return '<span class="r-nt">NT</span>';
+            return '<span class="' + SUIT_CLS[ch] + '">' + (SUIT_SYM[ch] || ch) + '</span>';
+        }
+        function signed(n) { return (n > 0 ? '+' : '') + n; }
+
+        // Double-dummy indices: strain S,H,D,C,NT = 0..4 ; declarer N,E,S,W = 0..3
+        const STRAIN_IDX = { S:0, H:1, D:2, C:3, N:4 };
+        const DECL_IDX   = { N:0, E:1, S:2, W:3 };
+
+        // Render the classic makeable-tricks grid from dd_table[strain][decl].
+        // Rows = strains (NT,♠,♥,♦,♣), columns = declarers (N,S,E,W). Cells
+        // below 7 tricks (no makeable contract) are dimmed. The cell matching
+        // the contract actually played is highlighted so the player sees, at a
+        // glance, the optimal result for their strain/seat.
+        function renderMakeable(dd, contract) {
+            if (!dd) return '';
+            const rows = [['N','NT',4],['S','♠',0],['H','♥',1],['D','♦',2],['C','♣',3]];
+            const cols = [['N',0],['S',2],['E',1],['W',3]];
+            let hlStrain = null, hlDecl = null;
+            if (contract) { hlStrain = contract[1]; hlDecl = contract[2]; }
+            let h = '<table class="dd-grid"><thead><tr><th></th>';
+            for (const [c] of cols) h += '<th>' + SEAT_CN[c] + '</th>';
+            h += '</tr></thead><tbody>';
+            for (const [sc, slabel, si] of rows) {
+                const lab = (sc === 'N') ? '<span class="r-nt">NT</span>' : fmtStrain(sc);
+                h += '<tr><th>' + lab + '</th>';
+                for (const [dc, di] of cols) {
+                    const t = dd[si][di];
+                    let cls = (t >= 7) ? 'mk' : 'no';
+                    if (sc === hlStrain && dc === hlDecl) cls += ' hl';
+                    h += '<td class="' + cls + '">' + t + '</td>';
+                }
+                h += '</tr>';
+            }
+            h += '</tbody></table>';
+            return h;
+        }
+
+        function showDealResult(dict) {
+            let el = document.getElementById('deal-result');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'deal-result';
+                document.body.appendChild(el);
+            }
+            let body = '';
+            const c = dict.contract;
+            if (!c) {
+                const dd0 = Array.isArray(dict.dd_table) ? dict.dd_table : null;
+                body = '<div class="dr-line big">四家 PASS · 无定约</div>' +
+                  (dd0 ? '<div class="dr-grid-wrap"><div class="dr-grid-title">双明手可成局表 (各家各门可赢墩数)</div>' +
+                         renderMakeable(dd0, null) + '</div>' : '');
+            } else {
+                const level = c[0], strain = c[1], decl = c[2];
+                const need = 6 + parseInt(level);
+                const took = (typeof dict.tricks_taken === 'number') ? dict.tricks_taken : null;
+                let made = '';
+                if (took !== null) {
+                    const diff = took - need;
+                    if (diff === 0)      made = '<span class="ok">定约做成</span>';
+                    else if (diff > 0)   made = '<span class="ok">做成 ' + signed(diff) + '</span>';
+                    else                 made = '<span class="down">宕 ' + (-diff) + '</span>';
+                    made += ' <span class="muted">(' + took + ' 墩)</span>';
+                }
+                const score = (typeof dict.score === 'number') ? dict.score : null;
+                const par   = (typeof dict.parscore === 'number') ? dict.parscore : null;
+                const dd    = Array.isArray(dict.dd_table) ? dict.dd_table : null;
+                // Optimal (double-dummy) tricks for the played strain+declarer,
+                // and the gap vs what the player actually took.
+                let gapLine = '';
+                if (dd && took !== null && strain in STRAIN_IDX && decl in DECL_IDX) {
+                    const best = dd[STRAIN_IDX[strain]][DECL_IDX[decl]];
+                    const g = took - best;
+                    let tag;
+                    if (g === 0)     tag = '<span class="ok">= 最佳</span>';
+                    else if (g < 0)  tag = '<span class="down">少 ' + (-g) + ' 墩</span>';
+                    else             tag = '<span class="ok">对手漏防 +' + g + ' 墩</span>';
+                    gapLine =
+                      '<div class="dr-line"><span class="muted">双明手最佳:</span> ' +
+                      best + ' 墩 · <span class="muted">你:</span> ' + took + ' 墩 ' + tag + '</div>';
+                }
+                body =
+                  '<div class="dr-line big">' + level + ' ' + fmtStrain(strain) +
+                    ' · ' + SEAT_CN[decl] + '家做庄</div>' +
+                  (made ? '<div class="dr-line">' + made + '</div>' : '') +
+                  gapLine +
+                  (score !== null ? '<div class="dr-line"><span class="muted">实得分 (南北):</span> ' + signed(score) + '</div>' : '') +
+                  (par !== null ? '<div class="dr-line"><span class="muted">双名手 Par (南北):</span> ' + signed(par) + '</div>' : '') +
+                  (dd ? '<div class="dr-grid-wrap"><div class="dr-grid-title">双明手可成局表 (各家各门可赢墩数)</div>' +
+                        renderMakeable(dd, c) + '</div>' : '');
+            }
+            el.innerHTML =
+                '<div class="dr-card">' +
+                  '<div class="dr-title">本局结果</div>' +
+                  body +
+                  '<div class="dr-note">已自动存入历史 📜</div>' +
+                  '<div class="dr-btns">' +
+                    '<a href="' + nextDeal + '">🔄 下一局</a>' +
+                    '<a href="/历史">📜 历史</a>' +
+                    '<button type="button" onclick="document.getElementById(\'deal-result\').classList.remove(\'on\')">✕ 复盘</button>' +
+                  '</div>' +
+                '</div>';
+            el.classList.add('on');
+        }
+
+    </script>
 
     
 </body>

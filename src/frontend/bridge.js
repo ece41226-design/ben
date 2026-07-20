@@ -301,11 +301,17 @@ class Deal {
     renderClaim(element) {
         element.textContent = ''
         let html = ''
-        //if ((this.tricksCount[0] + this.tricksCount[1]) > 0) {
-        for (let i = 0; i < 14 - (this.tricksCount[0] + this.tricksCount[1]); i++) {
-            html += '<div tricks="' + i + '">'+i+'</div>'
+        // The wire value ("tricks" attr) stays = i (additional/remaining tricks
+        // the claimer takes) because that's what the engine checks against.
+        // But the LABEL shows the mainstream figure: the claimer side's FINAL
+        // total tricks (already won + i), so you can read off "I claim 10".
+        const claimerSide = this.turn % 2
+        const alreadyWon = this.tricksCount[claimerSide]
+        const remaining = 13 - (this.tricksCount[0] + this.tricksCount[1])
+        // Descending: you usually claim most/all, so put the big totals first.
+        for (let i = remaining; i >= 0; i--) {
+            html += '<div tricks="' + i + '">' + (alreadyWon + i) + '</div>'
         }
-        //}
         element.innerHTML = html
     }
 
