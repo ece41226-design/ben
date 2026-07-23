@@ -1,5 +1,8 @@
+import asyncio
 import json
 import numpy as np
+
+from websockets.exceptions import ConnectionClosed
 
 import deck52
 
@@ -160,6 +163,7 @@ class HumanLeadSocket:
         candidates = []
         samples = []
 
+        retries = 0
         while True:
             try:
                 await self.socket.send(json.dumps({'message': 'get_card_input'}))
@@ -168,13 +172,23 @@ class HumanLeadSocket:
 
                 if (str(human_card).startswith("Cl") or str(human_card).startswith("Co")) :
                     return CardResp(card=human_card, candidates=candidates, samples=samples, shape=-1, hcp=-1, quality=None, who = None, claim = -1)
-                else:    
+                else:
                     return CardResp(card=Card.from_symbol(human_card), candidates=candidates, samples=samples, shape=-1, hcp=-1, quality=None, who = "Human", claim = -1)
 
+            except ConnectionClosed as ex:
+                # Socket is dead ("no close frame received or sent", code 1006,
+                # "going away", ...). Retrying send/recv on it just hot-spins the
+                # CPU and floods the log, so propagate and let the caller tear the
+                # game down. (Old code only re-raised on "going away"; unclean
+                # drops looped forever -> 98% CPU + GB log.)
+                print("Connection closed while receiving lead:", ex)
+                raise
             except Exception as ex:
-                print(f"Exception receiving card ", ex)
-                if "going away" in str(ex):
+                print("Exception receiving card ", ex)
+                retries += 1
+                if "going away" in str(ex) or retries >= 5:
                     raise ex
+                await asyncio.sleep(0.5)
 
 
 
@@ -257,6 +271,7 @@ class HumanCardPlayerSocket(HumanCardPlayer):
 
     async def get_card_input(self):
 
+        retries = 0
         while True:
             try:
                 await self.socket.send(json.dumps({
@@ -267,10 +282,19 @@ class HumanCardPlayerSocket(HumanCardPlayer):
                     return human_card
                 else:
                     return deck52.encode_card(human_card)
+            except ConnectionClosed as ex:
+                # Dead socket: retrying send/recv hot-spins the CPU and floods
+                # the log (this loop was the /tmp/ben_gameserver.log runaway).
+                # Propagate so the caller ends the game. Old code only re-raised
+                # on "going away", so unclean drops looped forever.
+                print("Connection closed while receiving card:", ex)
+                raise
             except Exception as ex:
-                print(f"Exception receiving card", ex)
-                if "going away" in str(ex):
+                print("Exception receiving card", ex)
+                retries += 1
+                if "going away" in str(ex) or retries >= 5:
                     raise ex
+                await asyncio.sleep(0.5)
 
 class ConsoleFactory:
 
