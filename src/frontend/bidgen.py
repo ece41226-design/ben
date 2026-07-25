@@ -135,8 +135,8 @@ def _check_puppet_stayman(H):
         return None
     Ls = lengths(S)
     if (Ls[0] >= 4 or Ls[1] >= 4) and hcp(S) >= 4:
-        return ('N', '重询斯台曼(2NT–3♣)', '搭档(北)开 2NT(20-21 均型)。你有 4+ 张高花、'
-                '想找 5-3 或 4-4 高花配合,用重询(布偶)斯台曼 3♣ 让搭档先报 5 张、再报 4 张高花。'
+        return ('N', '傀儡斯台曼(2NT–3♣)', '搭档(北)开 2NT(20-21 均型)。你有 4+ 张高花、'
+                '想找 5-3 或 4-4 高花配合,用傀儡(Puppet)斯台曼 3♣ 让搭档先报 5 张、再报 4 张高花。'
                 '注:Ben 按自有体系应,练你自己叫出这口。')
     return None
 
@@ -280,16 +280,36 @@ def _check_overcall(H):
 
 
 # ============= opening 1NT (South opens 1NT, handles partner) =============
+def _opponents_quiet(E, W):
+    # Keep an "open 1NT and declare it" drill on-topic: the opponents must not
+    # have the ammunition to overcall and steal the auction, otherwise South
+    # ends up *defending* (e.g. a Cappelletti 2D both-majors overcall pushing
+    # the deal to 3H by E/W) instead of declaring the NT contract the drill is
+    # about. Filter out any E/W hand that would naturally compete.
+    for hand in (E, W):
+        L = lengths(hand)
+        h = hcp(hand)
+        if h >= 12:                                   # opening strength
+            return False
+        if max(L) >= 6:                               # long suit -> jump/overcall
+            return False
+        if L[0] >= 4 and L[1] >= 4 and h >= 9:        # both majors -> Cappelletti
+            return False
+    if hcp(E) + hcp(W) >= 20:                         # combined balance-of-power
+        return False
+    return True
+
+
 def _check_open_1nt(H):
     N, E, S, W = H
-    if _nt_opener(S):
+    if _nt_opener(S) and _opponents_quiet(E, W):
         return ('S', '开叫 1NT', '你 15-17 均型,开叫 1NT。之后按搭档的应叫'
                 '(Stayman / 转移 / 邀请)逐步应对,并打好这个无将定约。')
     return None
 
 def _check_open_stayman(H):
     N, E, S, W = H
-    if not _nt_opener(S):
+    if not _nt_opener(S) or not _opponents_quiet(E, W):
         return None
     Ln = lengths(N)
     if (Ln[0] == 4 or Ln[1] == 4) and Ln[0] < 5 and Ln[1] < 5 and 8 <= hcp(N) <= 15:
@@ -299,7 +319,7 @@ def _check_open_stayman(H):
 
 def _check_open_transfer(H):
     N, E, S, W = H
-    if not _nt_opener(S):
+    if not _nt_opener(S) or not _opponents_quiet(E, W):
         return None
     Ln = lengths(N)
     for m in (0, 1):
@@ -310,7 +330,7 @@ def _check_open_transfer(H):
 
 def _check_open_invite(H):
     N, E, S, W = H
-    if not _nt_opener(S):
+    if not _nt_opener(S) or not _opponents_quiet(E, W):
         return None
     Ln = lengths(N)
     if is_balanced(Ln) and Ln[0] < 4 and Ln[1] < 4 and 8 <= hcp(N) <= 9:
@@ -383,7 +403,7 @@ def _check_new_minor(H):
     N, E, S, W = H; Ln, Ls = lengths(N), lengths(S)
     for m in (0, 1):
         if Ls[m] >= 5 and 11 <= hcp(S) <= 15 and is_balanced(lengths(N)) and 12 <= hcp(N) <= 14 and Ln[m] <= 3:
-            return ('N', '新低花逼叫 (checkback)',
+            return ('N', '重询斯台曼(新低花逼叫 / checkback)',
                     f'搭档开叫后再叫 1NT(12-14 均型)。你 5 张{SUIT_SYM[m]}+邀请以上,'
                     f'用新低花逼叫问搭档有没有 3 张{SUIT_SYM[m]}(找 5-3),否则打 NT。')
     return None
@@ -511,7 +531,7 @@ SEQ_LIST = [
     ('nt_game',    '直上 3NT',      '均型 10-14 无高花,叫 3NT', 'nt'),
     ('nt_slam',    '满贯邀请',      '均型 16-17,定量 4NT', 'nt'),
     ('twoway_stayman','双路斯台曼',  '成局逼叫值+4 高花,叫 2♦ 逼局斯台曼', 'nt'),
-    ('puppet_stayman','重询斯台曼',  '搭档开 2NT,4+ 高花,叫 3♣ 重询高花', 'nt'),
+    ('puppet_stayman','傀儡斯台曼',  '搭档开 2NT,4+ 高花,叫 3♣ 傀儡问高花', 'nt'),
     ('strong_2c',  '强 2♣ 开叫',    '22+ 强牌,人工逼叫开叫', 'seq'),
     ('respond_2c', '强 2♣ 应叫·2♦等叫', '搭档开 2♣,你 ≤7 点叫 2♦ 等叫', 'seq'),
     ('respond_2c_pos','强 2♣ 应叫·正响应','搭档开 2♣,你 8+ 点带好套,直接示套', 'seq'),
@@ -526,7 +546,7 @@ SEQ_LIST = [
     ('splinter',   'Splinter',     '高花配合+短套,双跳示短探满贯', 'slam'),
     ('control_cue','控制示叫',      '满贯区,逐门示控制交流', 'slam'),
     ('fourth_suit','第四花色逼叫',  '无落点时叫第四花色人工逼叫', 'slam'),
-    ('new_minor',  '新低花逼叫',    '搭档 1NT 再叫后找 5-3 高花', 'slam'),
+    ('new_minor',  '重询斯台曼(新低花逼叫)', '搭档 1NT 再叫后找 5-3 高花', 'slam'),
     ('defend_preempt','防守对手阻击·加倍','对手开弱二,你 13+ 短其门,技术性加倍', 'comp'),
     ('negative_double','负性加倍',  '搭档开叫被夺叫,示未叫高花', 'comp'),
     ('michaels',   'Michaels 起叫', '起叫对方花色示双色套', 'comp'),
