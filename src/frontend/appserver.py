@@ -1023,8 +1023,15 @@ def frontend(filename):
     if '?' in filename:
         filename = filename[:filename.index('?')]
 
-    file_path = os.path.join(script_dir, '')    
-    return static_file(filename, root=file_path)
+    file_path = os.path.join(script_dir, '')
+    resp = static_file(filename, root=file_path)
+    # The frontend (html/css/js) is actively iterated; tell browsers to
+    # revalidate every load so edits show up on a normal reload instead of
+    # needing a hard refresh. static_file still sends ETag/Last-Modified, so
+    # an unchanged file comes back as a cheap 304 rather than a full re-download.
+    if filename.endswith(('.html', '.css', '.js')):
+        resp.set_header('Cache-Control', 'no-cache, must-revalidate')
+    return resp
 
 @app.route('/favicon.ico')
 def frontend():
