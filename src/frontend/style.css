@@ -435,20 +435,35 @@ body {
    cross on top, then auction panel, then bidding box - all full width. */
 @media (max-width: 860px) {
     :root { --cw: clamp(1.7rem, 6.6vw, 2.4rem); }
+    /* Keep the real bridge cross even when stacked: the human is always South
+       (bottom), partner North across the top, and the two opponents on their
+       correct sides (West left, East right). This way a defender's dummy shows
+       up on its true side and can never be mistaken for the partner, while a
+       declarer's dummy (partner) sits directly across. Empty side seats collapse
+       so the table keeps full width. */
     #container {
         height: auto;
         max-width: 560px;
-        grid-template-columns: 1fr;
-        grid-template-rows: repeat(7, auto);
-        grid-template-areas: "n" "w" "t" "e" "s" "auc" "bid";
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-rows: repeat(5, auto);
+        grid-template-areas:
+            "n   n   n"
+            "w   t   e"
+            "s   s   s"
+            "auc auc auc"
+            "bid bid bid";
         gap: 6px;
     }
-    /* every seat becomes a full-width horizontal row */
-    #north { grid-area: n; grid-column: auto; align-items: center; }
-    #west  { grid-area: w; flex-direction: row; justify-content: center; align-items: center; }
+    #north { grid-area: n; align-items: center; }
+    #west  { grid-area: w; flex-direction: column; justify-content: center; align-items: center; }
     #table { grid-area: t; min-height: 200px; }
-    #east  { grid-area: e; flex-direction: row; justify-content: center; align-items: center; }
-    #south { grid-area: s; grid-column: auto; align-items: center; }
+    #east  { grid-area: e; flex-direction: column; justify-content: center; align-items: center; }
+    #south { grid-area: s; align-items: center; }
+    /* Stacked rows are only as tall as the cards, so the top-left seat label and
+       the top-right 明手 DUMMY badge (both absolutely positioned) used to sit on
+       top of the fanned cards. Reserve a strip above the row so they clear. */
+    #north, #south { padding-top: 1.25rem; }
+    .grid-item.is-dummy::after { top: 3px; }
     #auction-main { grid-area: auc; grid-row: auto; font-size: .95rem; }
     #bidding { grid-area: bid; display: flex; justify-content: center; }
     #bidding-box { align-items: center; }
@@ -621,3 +636,83 @@ table.dd-grid td.hl  { background: #ffd66b; color: #3a2c00; font-weight: 800; }
 .dd-grid .r-diamond { color: #ffb066; }
 .dd-grid .r-club    { color: #7ff0a6; }
 .dd-grid .r-nt      { color: #cdd6ff; }
+
+/* ===================== seat labels + dummy badge =====================
+   Each visible hand carries its compass seat, so a defender can never
+   mistake the dummy for their partner. Critical in the stacked mobile
+   layout (grid order n,w,t,e,s) where the dummy of an opponent contract
+   sits directly above the table and used to read as "North / partner".
+   Labels appear only on hands that actually hold cards (:has(.card)). */
+#north, #east, #south, #west { position: relative; }
+#north:has(.card)::before,
+#east:has(.card)::before,
+#south:has(.card)::before,
+#west:has(.card)::before {
+    position: absolute; top: 2px; left: 5px;
+    font-size: .82rem; font-weight: 800; letter-spacing: .02em;
+    color: var(--gold-soft, #d9b45a); opacity: .9;
+    pointer-events: none; z-index: 3;
+    text-shadow: 0 1px 2px rgba(0,0,0,.45);
+}
+#north:has(.card)::before { content: "北 N"; }
+#east:has(.card)::before  { content: "东 E"; }
+#south:has(.card)::before { content: "南 S · 你"; }
+#west:has(.card)::before  { content: "西 W"; }
+
+/* Dummy badge — set via JS class .is-dummy on the dummy's hand area. */
+.grid-item.is-dummy::after {
+    content: "明手 DUMMY";
+    position: absolute; top: 2px; right: 6px; z-index: 3;
+    font-size: .72rem; font-weight: 800; letter-spacing: .03em;
+    color: #10240f; background: var(--gold-soft, #d9b45a);
+    padding: 1px 7px; border-radius: 10px;
+    pointer-events: none; text-shadow: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,.35);
+}
+
+/* ===================== 北家做庄翻转 (declarer-at-bottom) =====================
+   当"人来打庄"(URL H=x)且庄家是搭档北家时,JS 给 #container 加 .flip180,
+   把牌桌 180° 翻转:人真正操作的北家落到底部(平时南家坐的位置),明手(南家)
+   翻到顶部,东西两家左右对调,中央方位十字与出牌墩位同步翻转。
+   实现是纯 CSS 换位——移动 DIV 而不是移动牌内容,所以出牌点击逻辑、座位标签
+   与明手徽标都随各自 DIV 一起走,播放逻辑 JS 一行不用改。庄家在南或人防守时
+   不加此类,布局保持原样。 */
+
+/* 中央方位十字:桌面/手机通用(#table-container 的 3x3 两处布局一致)。
+   与十字原始定义(label-*/trick-*)成 N↔S / E↔W 对称互换。 */
+#container.flip180 .label-north { grid-row: 4; align-items: flex-end; }
+#container.flip180 .label-south { grid-row: 1; align-items: flex-start; }
+#container.flip180 .label-west  { grid-column: 5; }
+#container.flip180 .label-east  { grid-column: 1; }
+#container.flip180 .trick-north { grid-row: 3; align-items: flex-start; }
+#container.flip180 .trick-south { grid-row: 2; align-items: flex-end; }
+#container.flip180 .trick-west  { grid-column: 4; justify-content: flex-start; }
+#container.flip180 .trick-east  { grid-column: 2; justify-content: flex-end; }
+
+/* 把 "· 你" 标记移到人真正操作的北家(底部),南家(顶部)退回纯座位名——
+   配合明手徽标,一眼看清:底部是你打的庄家,顶部是明手。 */
+#container.flip180 #north:has(.card)::before { content: "北 N · 你"; }
+#container.flip180 #south:has(.card)::before { content: "南 S"; }
+
+/* 四家手牌 —— 桌面(4 列网格,显式换位覆盖自动布局)。 */
+@media (min-width: 861px) {
+    #container.flip180 > #south { grid-column: 1 / span 3; grid-row: 1; align-items: flex-end; }   /* 明手→顶 */
+    #container.flip180 > #north { grid-column: 1 / span 3; grid-row: 3; align-items: flex-start; }  /* 庄家→底 */
+    #container.flip180 > #west  { grid-column: 3; grid-row: 2; }   /* 西→右 */
+    #container.flip180 > #east  { grid-column: 1; grid-row: 2; }   /* 东→左 */
+    #container.flip180 > #table { grid-column: 2; grid-row: 2; }
+    #container.flip180 > #auction-main { grid-column: 4; grid-row: 1 / span 2; }
+    #container.flip180 > #bidding { grid-column: 4; grid-row: 3; }
+}
+
+/* 四家手牌 —— 手机(堆叠命名网格,重排 grid-template-areas 即完成翻转)。 */
+@media (max-width: 860px) {
+    #container.flip180 {
+        grid-template-areas:
+            "s   s   s"
+            "e   t   w"
+            "n   n   n"
+            "auc auc auc"
+            "bid bid bid";
+    }
+}

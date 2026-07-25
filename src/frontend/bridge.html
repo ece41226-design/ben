@@ -3,6 +3,10 @@
 
 <head>
   <meta charset="utf-8">
+  <!-- Without this, phones default to a ~980px viewport and always get the
+       desktop layout scaled down, so the stacked mobile layout (and its
+       North-declarer flip) never engage. The LAN launch is meant for phones. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Bridge with BEN</title>
 
@@ -403,6 +407,9 @@
                 deal = new Deal(data.dealer, data.vuln, data.hand, data.board_no)
                 deal.renderNumber(document.querySelector('.label-number'))
                 explain.innerHTML = ""
+                // New deal starts in the bidding phase (human bids as South at
+                // the bottom); clear any declarer-flip from the previous deal.
+                document.getElementById('container').classList.remove('flip180')
                 if (north) deal.hands[0].isPublic = true
                 if (east) deal.hands[1].isPublic = true
                 if (south) deal.hands[2].isPublic = true
@@ -472,9 +479,17 @@
                     alert("Your bid will NOT be alerted")
                 }
             } else if (data.message == "auction_end") {
+                // Clear any dummy badge left over from the previous deal.
+                document.querySelectorAll('.grid-item.is-dummy')
+                    .forEach(el => el.classList.remove('is-dummy'))
                 deal.auction = data.auction
                 deal.declarer = data.declarer
                 deal.strain = data.strain
+                // 北家做庄翻转:人来打庄(H)且庄家是搭档北家(0)时,把牌桌 180°
+                // 翻转,让人真正操作的北家坐到底部、明手(南)翻到顶部。庄家在南
+                // 或人防守时不翻。座位标签与明手徽标随各自 DIV 一起走。
+                const flipForNorthDeclarer = !!humandeclares && !!south && deal.declarer === 0
+                document.getElementById('container').classList.toggle('flip180', flipForNorthDeclarer)
                 deal.turn = (data.declarer + 1) % 4
                 setTurn(deal.turn)
                 updateTable(deal)
@@ -494,6 +509,12 @@
                 deal.hands[data.player].cards = parseHand(data.dummy)
                 deal.hands[data.player].isPublic = true
                 updateTable(deal)
+                // Badge the dummy's seat so a defender can never mistake it for
+                // their partner (esp. in the stacked mobile layout).
+                document.querySelectorAll('.grid-item.is-dummy')
+                    .forEach(el => el.classList.remove('is-dummy'))
+                const dummySel = ['#north', '#east', '#south', '#west'][deal.dummy]
+                if (dummySel) document.querySelector(dummySel).classList.add('is-dummy')
 
                 document.querySelectorAll('.card')
                     .forEach(c => c.addEventListener('click', cardClick))
