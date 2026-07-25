@@ -205,6 +205,7 @@
         }
 
         var deal
+        let currentBoardNo = null   // board number of the deal in play, for 重打
         let alertbid = false
         function getTrickCardSlots() {
             return [
@@ -405,6 +406,10 @@
             if (data.message == "deal_start") {
 
                 deal = new Deal(data.dealer, data.vuln, data.hand, data.board_no)
+                // Remember which board this is so "重打" can redraw the exact
+                // same deal — for random boards the URL had no board_no, but the
+                // server tells us the number it drew (deterministic from seed).
+                currentBoardNo = data.board_no
                 deal.renderNumber(document.querySelector('.label-number'))
                 explain.innerHTML = ""
                 // New deal starts in the bidding phase (human bids as South at
@@ -814,6 +819,11 @@
                   (dd ? '<div class="dr-grid-wrap"><div class="dr-grid-title">双明手可成局表 (各家各门可赢墩数)</div>' +
                         renderMakeable(dd, c) + '</div>' : '');
             }
+            // "重打" replays the exact same deal — pin board_no to the one in
+            // play so a random board redraws identically instead of a new one.
+            const replayUrl = (currentBoardNo !== null && currentBoardNo !== '')
+                ? updateQueryParam('board_no', String(currentBoardNo))
+                : null;
             el.innerHTML =
                 '<div class="dr-card">' +
                   '<div class="dr-title">本局结果</div>' +
@@ -823,6 +833,7 @@
                     '<a href="' + nextDeal + '">🔄 下一局</a>' +
                     '<a href="/历史">📜 历史</a>' +
                     '<button type="button" onclick="document.getElementById(\'deal-result\').classList.remove(\'on\')">✕ 复盘</button>' +
+                    (replayUrl ? '<a href="' + replayUrl + '">🔁 重打</a>' : '') +
                   '</div>' +
                 '</div>';
             el.classList.add('on');
